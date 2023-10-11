@@ -4,14 +4,11 @@ from Quantreo.Backtest import *
 
 class WalkForwardOptimization:
     """
-    A class for performing Walk-Forward Optimization on a trading strategy.
+    La classe WalkForwardOptimization è progettata per effettuare l'ottimizzazione walk-forward su una strategia di trading. 
+    L'obiettivo principale di questa classe è trovare i parametri ottimali per una strategia di trading dividendo un dataset in più insiemi di training e test 
+    e eseguendo la strategia su ognuno di essi. 
 
-    This class is responsible for finding the optimal set of parameters for a
-    trading strategy by dividing a dataset into multiple training and test sets
-    and running the strategy on each one.
-
-    This method of optimization helps prevent curve fitting by ensuring that the
-    strategy performs well over many different time periods and under various market conditions.
+    La WalkForwardOptimization aiuta a prevenire il curve fitting assicurando che la strategia funzioni bene su molti periodi temporali diversi e sotto varie condizioni di mercato.
 
     Parameters
     ----------
@@ -74,6 +71,7 @@ class WalkForwardOptimization:
         # Set the title of our Backtest plot
         self.title_graph = title
 
+    # Questo metodo crea una lista di dizionari con tutte le possibili combinazioni dei parametri variabili, tenendo conto anche dei parametri fissi.
     def get_combinations(self):
         # Create a list of dictionaries with all the possible combination (ONLY with variable parameters)
         keys = list(self.parameters_range.keys())
@@ -84,6 +82,7 @@ class WalkForwardOptimization:
         for dictionary in self.dictionaries:
             dictionary.update(self.fixed_parameters)
 
+    # Questo metodo divide i dati in insiemi di training e test, in base a se il training set è ancorato o meno.
     def get_sub_samples(self):
         # Compute the length of the test set
         length_test = int(self.length_train_set / self.pct_train_set - self.length_train_set)
@@ -122,6 +121,7 @@ class WalkForwardOptimization:
 
             start += length_test
 
+    # Questo metodo calcola un criterio basato su ritorno e drawdown massimo per un dato insieme di dati e parametri, e inizializza un backtest con questi.
     def get_criterion(self, sample, params):
         # Backtest initialization with a specif dataset and set of parameters
         self.BT = Backtest(data=sample, TradingStrategy=self.TradingStrategy, parameters=params)
@@ -135,6 +135,7 @@ class WalkForwardOptimization:
         # We add ret and dd because dd < 0
         self.criterion = ret + 2*dd
 
+    # Trova i migliori parametri sul training set e li memorizza.
     def get_best_params_train_set(self):
         # Store of the possible parameters combinations with the associated criterion
         # Here, we put the best criterion on the train set to find the best parameters BUT we will replace it
@@ -168,6 +169,7 @@ class WalkForwardOptimization:
         self.best_params_sample = dict(df_find_params.sort_values(by="criterion", ascending=False).iloc[0, :-1])
         self.best_params_sample.update(self.fixed_parameters)
 
+    # Questo metodo liscia i risultati ottenuti applicando la media esponenziale o la moda, a seconda del tipo di dato, ai parametri ottimali trovati nei set di addestramento.
     def get_smoother_result(self):
         self.smooth_result = pd.DataFrame()
         # For each column, we will extract the exp mean or the mode
@@ -198,6 +200,7 @@ class WalkForwardOptimization:
 
         return output_params
 
+    # Questo metodo testa i migliori parametri lisciati sul set di test e aggiorna il dataframe dei risultati con il criterio calcolato sul set di test
     def test_best_params(self):
         # Extract smoothed best params
         smooth_best_params = self.get_smoother_result()
@@ -209,6 +212,7 @@ class WalkForwardOptimization:
         self.df_results.at[self.df_results.index[-1], 'criterion'] = self.criterion
         self.best_params_smoothed.append(smooth_best_params)
 
+    # Questo metodo crea i sotto-campioni e poi esegue l'ottimizzazione walk-forward sui set di training e test.
     def run_optimization(self):
         # Create the sub-samples
         self.get_sub_samples()
@@ -218,6 +222,7 @@ class WalkForwardOptimization:
             self.get_best_params_train_set()
             self.test_best_params()
 
+    # Questo metodo visualizza i risultati del backtest per il periodo seguente al metodo walk-forward.
     def display(self):
         # Empty dataframe that will be filled by the result on each period
         df_test_result = pd.DataFrame()
